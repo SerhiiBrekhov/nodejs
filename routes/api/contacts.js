@@ -1,25 +1,19 @@
 const express = require('express')
 
+const {tryCatchWrapper} = require('../../models/helpers/')
+const { validateBody } = require("../../middlewares/index")
+const { addMovieSchema } = require("../../schemas/index")
+
 const router = express.Router()
 
-router.get('/', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
+// const {contactsPath} = require('../../models/contacts')
+const {listContacts, getContactById, addContact,
+     removeContact, updateToContact} = require('../../models/contacts')
 
-router.get('/:contactId', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
-
-router.post('/', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
-
-router.delete('/:contactId', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
-
-router.put('/:contactId', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
+router.get('/', tryCatchWrapper(listContacts))
+router.get('/:contactId', tryCatchWrapper(getContactById))
+router.post('/', validateBody(addMovieSchema), tryCatchWrapper(addContact))
+router.delete('/:contactId', tryCatchWrapper(removeContact))
+router.put('/:contactId', tryCatchWrapper(updateToContact))
 
 module.exports = router
