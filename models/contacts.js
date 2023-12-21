@@ -1,89 +1,125 @@
-import Joi from "joi";
 const path = require("path");
 const { v4 } = require("uuid");
 const fs = require("fs").promises;
-// import contacts from "./db/contacts.json";
+const {
+  contactAddSchema,
+  updateContactAddSchema,
+} = require("../models/schems/validate");
 
-const contactsAddSchema = Joi.object({
-  name: Joi.string().required(),
-  email: Joi.string().required(),
-  phone: Joi.number().required(),
-});
+const { httpError, ctrlWrapper } = require("../helpers/index");
 
 const contactsPath = path.resolve("models", "db", "contacts.json");
 
 const listContacts = async () => {
   const data = await fs.readFile(contactsPath);
   const contacts = JSON.parse(data);
-  // console.log(contactsPath);
+
   return contacts;
 };
 
-const getContactById = async (contactId) => {
-  const contacts = await listContacts();
-  const result = contacts.find((item) => item.id === contactId);
-  // console.log({contacts,contactId})
-  if (!result) {
-    return null;
-  }
-  return result;
+const getAll = async (req, res, next) => {
+  // try {
+  const data = await listContacts();
+  res.status(200).json(data);
+  // } catch (error) {
+  // next(error);
+  // }
 };
 
-const addContact = async ({ name, email, phone }) => {
-  const contactsArr = await listContacts();
-  const newContact = {
-    id: v4(),
-    name: name,
-    email: email,
-    phone: phone,
-  };
-  contactsArr.push(newContact);
-
-  await fs.writeFile(contactsPath, JSON.stringify(contactsArr));
-
-  return newContact;
-};
-
-const removeContact = async (req, res, next) => {
+const getContactById = async (req, res) => {
   // try {
   const id = req.params;
-  const contactsBase = await listContacts();
-  const idx = contactsBase.findIndex(
-    (item) => Number(item.id) === id.contactId
-  );
-  if (idx === -1) {
-    res.status(404).json({ message: "Not found contact with that id." });
+  const contacts = await listContacts();
+  const result = contacts.find((item) => item.id === id.contactId);
+  if (!result) {
+    throw httpError(404, "Not found");
+    // res.status(404).json({ message: "Not found contact with that id." });
   }
-  console.log(idx);
-  contactsBase.splice(idx, 1);
-  await fs.writeFile(contactsPath, JSON.stringify(contactsBase));
-  res.status(200).json({ contactsBase, message: "contact deleted" });
+  res.status(200).json(result);
   // } catch (error) {
   //   next(error);
   // }
 };
 
-const updateContact = async (contactId, { name, email, phone }) => {
+const addContact = async (req, res) => {
+  // try {
+  const contactsArr = await listContacts();
+
+  const { error } = contactAddSchema.validate(req.body);
+  if (error) {
+    throw httpError(400, error.message);
+    // res.status(400).json({ message: "missing required name field" });
+  }
+
+  const newContact = {
+    id: v4(),
+    ...req.body,
+  };
+  contactsArr.push(newContact);
+  await fs.writeFile(contactsPath, JSON.stringify(contactsArr, null, 2));
+
+  res.status(201).json(newContact);
+  // }
+  // );
+  // } catch (error) {
+
+  //   next(error);
+  // }
+};
+
+const removeContact = async (req, res) => {
+  // try {
+  const id = req.params;
+
+  const contactsBase = await listContacts();
+  const idx = contactsBase.findIndex(
+    (item) => Number(item.id) === id.contactId
+  );
+  if (idx === -1) {
+    throw httpError(404, "Not found");
+    // res.status(404).json({ message: "Not found contact with that id." });
+  }
+  // console.log(idx);
+  contactsBase.splice(idx, 1);
+  await fs.writeFile(contactsPath, JSON.stringify(contactsBase, null, 2));
+  res.status(200).json({ message: `contact mit id #${idx} deleted` });
+  // } catch (error) {
+  //   next(error);
+  // }
+};
+
+const updateContact = async (req, res) => {
+  const id = req.params;
+  const { error } = updateContactAddSchema.validate(req.body);
+  if (error) {
+    throw httpError(400, error.message);
+  }
+  // if (!req.body) {
+  //   res.status(400).json({ message: "missing fields" });
+  // }
+  // const result = await service.updateContact(id.contactId, req.body);
   const contacts = await listContacts();
-  const idx = contacts.find((item) => item.id === contactId);
+  // console.log(contacts);
+  const idx = contacts.findIndex((item) => item.id === id.contactId);
   if (idx === -1) {
     return null;
   }
-  const updatedContact = {
-    id: contactId,
-    name: name,
-    email: email,
-    phone: phone,
-  };
-  contacts.splice(idx, 1, updatedContact);
-  await fs.writeFile(contactsPath, JSON.stringify(contacts));
-  return contacts;
-};
+  // console.log(idx);
 
+  contacts[idx] = { ...contacts[idx], ...req.body };
+  // console.log(contacts[idx]);
+
+  contacts.splice(idx, 1, contacts[idx]);
+  await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
+  // return contacts[idx];
+  res.status(200).json({ message: "update success" });
+  // res.status(201).json(contacts[idx]);
+};
 module.exports = {
   listContacts,
-  getContactById,
-  addContact,
-  removeContact,
-  updateContact,
+  getAll: ctrlWrapper(getAll),
+  getContactById: ctrlWrapper(getContactById),
+  addContact: ctrlWrapper(addContact),
+  removeContact: ctrlWrapper(removeContact),
+  updateContact: ctrlWrapper(updateContact),
 };
