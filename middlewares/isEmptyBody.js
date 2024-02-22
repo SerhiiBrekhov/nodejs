@@ -8,4 +8,4 @@ const isEmptyBody = async (req, res, next) => {
   next();
 };
 
-module.export = { isEmptyBody };
+module.exports = { isEmptyBody };

@@ -1,35 +1,30 @@
 const express = require("express");
 const router = express.Router();
 
-// const ctrlTask ​​= require('../controller');
-
 // const express = require('express')
+const authenticate = require("../../middlewares/authenticate");
 
-const { tryCatchWrapper } = require("../../helpers");
+// const { tryCatchWrapper } = require("../../helpers");
 const { validateBody } = require("../../middlewares/index");
-const { addMovieSchema, updateFavoriteSchema } = require("../../schemas/index");
+const { addMovieSchema, updateFavoriteSchema } = require("../../models/index");
 
-// const router = express.Router()
+const contactsCtrl = require("../../controllers/contacts");
 
-// const {contactsPath} = require('../../models/contacts')
-const {
-  listContacts,
-  getContactById,
-  addContact,
-  removeContact,
-  updateToContact,
-  updateFavoriteToContact,
-} = require("../../models/contacts");
-
-router.get("/", tryCatchWrapper(listContacts));
-router.get("/:contactId", tryCatchWrapper(getContactById));
-router.post("/", validateBody(addMovieSchema), tryCatchWrapper(addContact));
-router.delete("/:contactId", tryCatchWrapper(removeContact));
-router.put("/:contactId", tryCatchWrapper(updateToContact));
+router.get("/", authenticate, contactsCtrl.listAll);
+router.get("/:contactId", authenticate, contactsCtrl.getContactById);
+router.post(
+  "/",
+  authenticate,
+  validateBody(addMovieSchema),
+  contactsCtrl.addContact
+);
+router.delete("/:contactId", authenticate, contactsCtrl.removeContact);
+router.patch("/:contactId", authenticate, contactsCtrl.updateToContact);
 router.patch(
   "/favorite/:contactId",
+  authenticate,
   validateBody(updateFavoriteSchema),
-  tryCatchWrapper(updateFavoriteToContact)
+  contactsCtrl.updateFavoriteToContact
 );
 
 module.exports = router;
