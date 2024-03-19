@@ -1,4 +1,6 @@
-const { Schema, model } = require("mongoose");
+const mongoose = require("mongoose");
+const { Schema } = mongoose;
+// const { Schema, model } = require("mongoose");
 // const Schema = mongoose.Schema;
 // const Joi = require("joi");
 const { handleMongooseError } = require("../helpers/handleMongooseError");
@@ -23,14 +25,19 @@ const userSchema = new Schema(
       enum: ["starter", "pro", "business"],
       default: "starter",
     },
+
     token: {
       type: String,
       default: null,
     },
-  },
-  { versionKey: false, timestamps: false }
+    avatarURL: {
+      type: String,
+      required: false,
+    },
+  }
+  // { versionKey: false, timestamps: false }
 );
-const User = model("user", userSchema);
+const User = mongoose.model("User", userSchema);
 
 userSchema.post("save", handleMongooseError);
 
